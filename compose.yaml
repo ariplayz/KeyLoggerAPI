@@ -7,7 +7,7 @@
     ports:
       - "8080:8080"
     volumes:
-      - ./uploads:/root/uploads
+      - /root/uploads:/root/uploads
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
 
