@@ -29,11 +29,21 @@ app.MapPost("/upload", async (HttpRequest request) =>
         return Results.BadRequest("No file uploaded.");
     }
 
-    var uploadPath = "/root/uploads";
-    Directory.CreateDirectory(uploadPath);
+    var username = request.Form["username"].ToString();
+    if (string.IsNullOrWhiteSpace(username))
+    {
+        return Results.BadRequest("Username is required.");
+    }
+
+    // Sanitize username to prevent directory traversal
+    var safeUsername = Path.GetFileName(username);
+
+    var baseUploadPath = "/root/uploads";
+    var userUploadPath = Path.Combine(baseUploadPath, safeUsername);
+    Directory.CreateDirectory(userUploadPath);
  
     var file = request.Form.Files[0]; // Get the first uploaded file
-    var filePath = Path.Combine(uploadPath, file.FileName);
+    var filePath = Path.Combine(userUploadPath, file.FileName);
 
     // Save the file
     using (var stream = new FileStream(filePath, FileMode.Create))
