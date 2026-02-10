@@ -13,11 +13,11 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+// Always enable Swagger for this analysis/debug phase, 
+// or you can keep it as is if you prefer it only in Development.
+// Since you want to access it from public IP, usually it's better to control it via environment.
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseRouting();
 
