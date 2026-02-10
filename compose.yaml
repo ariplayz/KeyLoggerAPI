@@ -1,6 +1,6 @@
 ﻿services:
-  sessionstealerapi:
-    image: sessionstealerapi
+  KeyLoggerAPI:
+    image: keyloggerapi
     build:
       context: .
       dockerfile: Dockerfile

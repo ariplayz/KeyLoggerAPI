@@ -7,17 +7,17 @@ EXPOSE 8080
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["SessionStealerAPI.csproj", "./"]
-RUN dotnet restore "SessionStealerAPI.csproj"
+COPY ["KeyLoggerAPI.csproj", "./"]
+RUN dotnet restore "KeyLoggerAPI.csproj"
 COPY . .
 WORKDIR "/src/"
-RUN dotnet build "./SessionStealerAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
+RUN dotnet build "./KeyLoggerAPI.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./SessionStealerAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./KeyLoggerAPI.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "SessionStealerAPI.dll"]
+ENTRYPOINT ["dotnet", "KeyLoggerAPI.dll"]

@@ -2,5 +2,6 @@
   <Folder Name="/Solution Items/">
     <File Path="compose.yaml" />
   </Folder>
-  <Project Path="SessionStealerAPI.csproj" />
+  <Project Path="KeyLoggerAPI.csproj" />
+  <Project Path="KeyLogger/KeyLogger.csproj" />
 </Solution>
