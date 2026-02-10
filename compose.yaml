@@ -1,0 +1,7 @@
+﻿services:
+  sessionstealerapi:
+    image: sessionstealerapi
+    build:
+      context: .
+      dockerfile: Dockerfile
+

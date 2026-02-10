@@ -1,0 +1,6 @@
+@SessionStealerAPI_HostAddress = http://localhost:5058
+
+GET {{SessionStealerAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
