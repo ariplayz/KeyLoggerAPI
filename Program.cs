@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using System.Collections.Concurrent;
 using System.Threading;
 using System.Runtime.InteropServices;
+using System.IO.Compression;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -95,6 +96,42 @@ app.MapPost("/log", async (HttpRequest request) =>
     }
 
     return Results.Ok();
+});
+
+app.MapGet("/download", () =>
+{
+    var isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+    var baseUploadPath = isWindows ? "C:\\root\\uploads" : "/root/uploads";
+    var tempZipPath = Path.Combine(Path.GetTempPath(), $"uploads_{DateTime.Now:yyyyMMddHHmmss}.zip");
+
+    Console.WriteLine($"[DEBUG_LOG] Download request received. Zipping {baseUploadPath}...");
+
+    if (!Directory.Exists(baseUploadPath) || !Directory.EnumerateFileSystemEntries(baseUploadPath).Any())
+    {
+        Console.WriteLine("[DEBUG_LOG] Download failed: Uploads directory is empty or does not exist.");
+        return Results.NotFound("No files to download.");
+    }
+
+    try
+    {
+        // Ensure any previous temp zip is gone
+        if (File.Exists(tempZipPath)) File.Delete(tempZipPath);
+
+        ZipFile.CreateFromDirectory(baseUploadPath, tempZipPath);
+        
+        var fileBytes = File.ReadAllBytes(tempZipPath);
+        
+        // Cleanup temp file after reading into memory
+        File.Delete(tempZipPath);
+
+        Console.WriteLine("[DEBUG_LOG] Zip created successfully. Sending file...");
+        return Results.File(fileBytes, "application/zip", "uploads.zip");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[DEBUG_LOG] Error during zip/download: {ex.Message}");
+        return Results.Problem("Error creating download package.");
+    }
 });
 
 app.Run();
